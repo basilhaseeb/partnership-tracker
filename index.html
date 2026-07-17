@@ -1,0 +1,823 @@
+<title>Outreach Tracker — Basil Haseeb</title>
+<style>
+  :root {
+    --bg: #F5F3EF;
+    --surface: #FFFFFF;
+    --surface-2: #F0EDE7;
+    --border: #E2DDD6;
+    --text: #1C1917;
+    --text-sub: #78716C;
+    --text-placeholder: #A8A29E;
+    --accent: #1A5276;
+    --accent-light: #EBF2F8;
+
+    --s-draft-bg: #FEF3C7; --s-draft-text: #92400E; --s-draft-dot: #D97706;
+    --s-sent-bg: #DBEAFE; --s-sent-text: #1E40AF; --s-sent-dot: #3B82F6;
+    --s-awaiting-bg: #FEE2E2; --s-awaiting-text: #991B1B; --s-awaiting-dot: #EF4444;
+    --s-convo-bg: #D1FAE5; --s-convo-text: #065F46; --s-convo-dot: #10B981;
+    --s-followup-bg: #FFE4CC; --s-followup-text: #7C2D12; --s-followup-dot: #F97316;
+    --s-closed-bg: #F3F4F6; --s-closed-text: #6B7280; --s-closed-dot: #9CA3AF;
+    --s-declined-bg: #FEE2E2; --s-declined-text: #7F1D1D; --s-declined-dot: #B91C1C;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131110; --surface: #1E1B17; --surface-2: #252119;
+      --border: #2E2924; --text: #F0EBE3; --text-sub: #9C9389;
+      --text-placeholder: #5C5650; --accent: #4A90C4; --accent-light: #1A2D3D;
+      --s-draft-bg: #2D2000; --s-draft-text: #FCD34D; --s-draft-dot: #D97706;
+      --s-sent-bg: #0F1D3D; --s-sent-text: #93C5FD; --s-sent-dot: #3B82F6;
+      --s-awaiting-bg: #2D0F0F; --s-awaiting-text: #FCA5A5; --s-awaiting-dot: #EF4444;
+      --s-convo-bg: #052E16; --s-convo-text: #6EE7B7; --s-convo-dot: #10B981;
+      --s-followup-bg: #2C1000; --s-followup-text: #FDBA74; --s-followup-dot: #F97316;
+      --s-closed-bg: #1F2937; --s-closed-text: #9CA3AF; --s-closed-dot: #6B7280;
+      --s-declined-bg: #2D0F0F; --s-declined-text: #FCA5A5; --s-declined-dot: #B91C1C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #131110; --surface: #1E1B17; --surface-2: #252119;
+    --border: #2E2924; --text: #F0EBE3; --text-sub: #9C9389;
+    --text-placeholder: #5C5650; --accent: #4A90C4; --accent-light: #1A2D3D;
+    --s-draft-bg: #2D2000; --s-draft-text: #FCD34D; --s-draft-dot: #D97706;
+    --s-sent-bg: #0F1D3D; --s-sent-text: #93C5FD; --s-sent-dot: #3B82F6;
+    --s-awaiting-bg: #2D0F0F; --s-awaiting-text: #FCA5A5; --s-awaiting-dot: #EF4444;
+    --s-convo-bg: #052E16; --s-convo-text: #6EE7B7; --s-convo-dot: #10B981;
+    --s-followup-bg: #2C1000; --s-followup-text: #FDBA74; --s-followup-dot: #F97316;
+    --s-closed-bg: #1F2937; --s-closed-text: #9CA3AF; --s-closed-dot: #6B7280;
+    --s-declined-bg: #2D0F0F; --s-declined-text: #FCA5A5; --s-declined-dot: #B91C1C;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #F5F3EF; --surface: #FFFFFF; --surface-2: #F0EDE7;
+    --border: #E2DDD6; --text: #1C1917; --text-sub: #78716C;
+    --text-placeholder: #A8A29E; --accent: #1A5276; --accent-light: #EBF2F8;
+    --s-draft-bg: #FEF3C7; --s-draft-text: #92400E; --s-draft-dot: #D97706;
+    --s-sent-bg: #DBEAFE; --s-sent-text: #1E40AF; --s-sent-dot: #3B82F6;
+    --s-awaiting-bg: #FEE2E2; --s-awaiting-text: #991B1B; --s-awaiting-dot: #EF4444;
+    --s-convo-bg: #D1FAE5; --s-convo-text: #065F46; --s-convo-dot: #10B981;
+    --s-followup-bg: #FFE4CC; --s-followup-text: #7C2D12; --s-followup-dot: #F97316;
+    --s-closed-bg: #F3F4F6; --s-closed-text: #6B7280; --s-closed-dot: #9CA3AF;
+    --s-declined-bg: #FEE2E2; --s-declined-text: #7F1D1D; --s-declined-dot: #B91C1C;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+  }
+
+  /* ── Header ── */
+  .header {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.02em;
+    line-height: 1.2;
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-top: 2px;
+  }
+
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { opacity: .9; background: var(--accent); }
+
+  /* ── Stat tiles ── */
+  .stats {
+    max-width: 1280px;
+    margin: 0 auto 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+  }
+
+  .stat-accent { border-top: 3px solid var(--accent); }
+
+  /* ── Tabs ── */
+  .tabs-wrap {
+    max-width: 1280px;
+    margin: 0 auto 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 2px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-sub);
+    cursor: pointer;
+    border: none;
+    background: none;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  .tab-count {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    color: var(--text-sub);
+    font-variant-numeric: tabular-nums;
+  }
+  .tab.active .tab-count { background: var(--accent-light); color: var(--accent); }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    max-width: 1280px;
+    margin: 12px auto 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-placeholder);
+    pointer-events: none;
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text-placeholder);
+    color: var(--surface);
+    border: none;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    transition: background .15s;
+  }
+  .search-clear:hover { background: var(--text-sub); }
+  .search-clear.visible { display: flex; }
+
+  input[type="text"], select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 7px 10px 7px 32px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  select { padding-left: 10px; cursor: pointer; }
+  input[type="text"]:focus, select:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--text-placeholder); }
+
+  /* ── Table ── */
+  .table-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .table-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead { background: var(--surface-2); }
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover { color: var(--text); }
+  th .sort-arrow { margin-left: 4px; opacity: .4; }
+  th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr.filtered-out { display: none; }
+  tr:hover td { background: var(--accent-light); }
+
+  /* ── Org cell ── */
+  .org-name { font-weight: 600; color: var(--text); }
+  .org-location { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+
+  /* ── Contact cell ── */
+  .contact-name { font-weight: 500; }
+  .contact-title { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+  .contact-email {
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 2px;
+    font-family: ui-monospace, monospace;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px 5px;
+    cursor: text;
+    display: inline-block;
+    min-width: 40px;
+    word-break: break-all;
+  }
+  .contact-email:hover { border-color: var(--border); background: var(--surface-2); }
+  .contact-email:focus { border-color: var(--accent); background: var(--surface-2); outline: none; }
+
+  .cc-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--text-sub);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    transition: background .1s;
+  }
+  .cc-toggle:hover { background: var(--border); }
+
+  .cc-list {
+    display: none;
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-sub);
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: break-all;
+    cursor: text;
+    min-height: 32px;
+    outline: none;
+  }
+  .cc-list.open { display: block; }
+  .cc-list:focus { border-color: var(--accent); background: var(--surface); }
+  .cc-hint {
+    font-size: 10px;
+    color: var(--text-placeholder);
+    margin-top: 4px;
+    display: none;
+    font-style: italic;
+  }
+  .cc-list.open + .cc-hint { display: block; }
+
+  /* ── Status pill ── */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .1s;
+    user-select: none;
+  }
+  .status-pill:hover { opacity: .82; }
+  .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  .status-draft     { background: var(--s-draft-bg);   color: var(--s-draft-text);   }
+  .status-draft::before     { background: var(--s-draft-dot);   }
+  .status-sent      { background: var(--s-sent-bg);    color: var(--s-sent-text);    }
+  .status-sent::before      { background: var(--s-sent-dot);    }
+  .status-awaiting  { background: var(--s-awaiting-bg);color: var(--s-awaiting-text);}
+  .status-awaiting::before  { background: var(--s-awaiting-dot);}
+  .status-convo     { background: var(--s-convo-bg);   color: var(--s-convo-text);   }
+  .status-convo::before     { background: var(--s-convo-dot);   }
+  .status-followup  { background: var(--s-followup-bg);color: var(--s-followup-text);}
+  .status-followup::before  { background: var(--s-followup-dot);}
+  .status-closed    { background: var(--s-closed-bg);  color: var(--s-closed-text);  }
+  .status-closed::before    { background: var(--s-closed-dot);  }
+  .status-declined  { background: var(--s-declined-bg);color: var(--s-declined-text);}
+  .status-declined::before  { background: var(--s-declined-dot);}
+
+  /* ── Follow-up stack ── */
+  .followup-stack { display: flex; flex-direction: column; gap: 5px; }
+  .followup-row { display: flex; align-items: center; gap: 6px; }
+  .followup-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-placeholder);
+    width: 32px;
+    flex-shrink: 0;
+  }
+
+  /* ── Date input ── */
+  input[type="date"] {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+    padding: 3px 6px;
+    cursor: pointer;
+    width: 130px;
+    outline: none;
+  }
+  input[type="date"]:hover { border-color: var(--border); background: var(--surface-2); }
+  input[type="date"]:focus { border-color: var(--accent); background: var(--surface-2); }
+
+  /* ── Notes ── */
+  .note-cell { min-width: 180px; max-width: 240px; }
+
+  .note-text {
+    font-size: 12px;
+    color: var(--text-sub);
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 3px 6px;
+    min-height: 26px;
+    display: block;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .note-text:empty::before { content: 'Add note…'; color: var(--text-placeholder); font-style: italic; }
+  .note-text:hover { border-color: var(--border); background: var(--surface-2); }
+  .note-text:focus { border-color: var(--accent); background: var(--surface-2); outline: none; }
+
+/* ── Footer ── */
+  .table-footer {
+    max-width: 1280px;
+    margin: 10px auto 0;
+    font-size: 12px;
+    color: var(--text-sub);
+    padding: 0 4px;
+  }
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <span class="eyebrow">Basil Haseeb · Creator Outreach</span>
+    <h1>Partnership Tracker</h1>
+    <p class="header-sub">Click a status pill to update · Click notes to edit · Changes save automatically</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="exportCSV()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Export CSV
+    </button>
+  </div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="tabs-wrap">
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search" placeholder="Search organization or contact…" oninput="onSearchInput()" style="padding-right:30px">
+    <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
+  </div>
+  <select id="filter-status" onchange="filterRows()">
+    <option value="">All statuses</option>
+    <option value="Draft Saved">Draft Saved</option>
+    <option value="Sent">Sent</option>
+    <option value="Awaiting Reply">Awaiting Reply</option>
+    <option value="In Conversation">In Conversation</option>
+    <option value="Follow-up Needed">Follow-up Needed</option>
+    <option value="Closed">Closed</option>
+  </select>
+</div>
+
+<div class="table-wrap">
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">Organization <span class="sort-arrow">↕</span></th>
+          <th onclick="sortTable(1)">Primary Contact <span class="sort-arrow">↕</span></th>
+          <th onclick="sortTable(2)">Date Pitched <span class="sort-arrow">↕</span></th>
+          <th onclick="sortTable(3)">Status <span class="sort-arrow">↕</span></th>
+          <th>Follow-ups</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+<div class="table-footer" id="row-count"></div>
+
+<script>
+const TABS = [
+  { id: 'all',         label: 'All' },
+  { id: 'Tourism Board',       label: 'Tourism Boards & Expeditions' },
+  { id: 'Hotels & Resorts',    label: 'Hotels & Resorts' },
+  { id: 'Creative Brands',     label: 'Creative Brands' },
+  { id: 'Lifestyle & Apparel', label: 'Lifestyle & Apparel' },
+];
+
+const STATUS_CYCLE = ['Draft Saved','Sent','Awaiting Reply','In Conversation','Follow-up Needed','Closed'];
+const STATUS_CLASS = {
+  'Draft Saved':      'status-draft',
+  'Sent':             'status-sent',
+  'Awaiting Reply':   'status-awaiting',
+  'In Conversation':  'status-convo',
+  'Follow-up Needed': 'status-followup',
+  'Closed':           'status-closed',
+};
+
+const SEED = [
+  // ── Tourism Boards ──
+  { org: 'Discover Saskatoon',                type: 'Tourism Board',  location: 'Saskatoon, SK, Canada',      contact: 'Leanne Schinkel',      title: 'Director of Marketing & Communications',       email: 'lschinkel@discoversaskatoon.com',    cc: ['Darby Sutherland — dsutherland@discoversaskatoon.com','Brooke Nelson — bnelson@discoversaskatoon.com'], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Discover Halifax',                  type: 'Tourism Board',  location: 'Halifax, NS, Canada',        contact: 'Holly Chessman',       title: 'Director of Marketing & Visitor Experience',   email: 'hchessman@discoverhalifaxns.com',    cc: ['Sarah Reeves — sreeves@discoverhalifaxns.com'],                                                          date: '2026-07-14', status: 'Closed',           followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Yosemite Mariposa County Tourism',  type: 'Tourism Board',  location: 'Mariposa, CA, USA',          contact: 'Ellen Bergstone Wasil',title: 'Director of Marketing & Creative',             email: 'ellen@yosemite.com',                 cc: ['Kim Lawson — kim@yosemite.com','Craig Polson — craig@yosemite.com'],                                        date: '2026-07-14', status: 'Awaiting Reply',   followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Visit Yuma Arizona',                type: 'Tourism Board',  location: 'Yuma, AZ, USA',              contact: 'General Inquiry',      title: '',                                             email: 'info@visityuma.com',                 cc: [],                                                                                                              date: '2026-07-13', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'No specific marketing contact on website' },
+  { org: 'Sudbury Tourism',                   type: 'Tourism Board',  location: 'Greater Sudbury, ON, Canada',contact: 'Lara Fielding',        title: 'Business Development Officer',                 email: 'Lara.Fielding@greatersudbury.ca',    cc: ['Shawna.Cole@greatersudbury.ca'],                                                                             date: '2026-07-15', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Email unconfirmed on official site — may bounce' },
+  { org: 'Destination Irvine',                type: 'Tourism Board',  location: 'Irvine, CA, USA',            contact: 'Misty Bond',           title: 'Executive Director',                           email: 'mbond@cityofirvine.org',             cc: ['Dave Lucey — dlucey@cityofirvine.org','Media — irvine@uniquelyd.com'],                                     date: '2026-07-15', status: 'Awaiting Reply',   followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'irvine@uniquelyd.com is external PR agency' },
+  { org: 'Tourism North Bay',                 type: 'Tourism Board',  location: 'North Bay, ON, Canada',      contact: 'Stacey Gadway',        title: 'Marketing & Communications Manager',           email: 'stacey@tourismnorthbay.com',         cc: ['Tanya Bédard — tanya@tourismnorthbay.com'],                                                                  date: '2026-07-15', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Tourisme Laval',                    type: 'Tourism Board',  location: 'Laval, QC, Canada',          contact: 'Annie Harvey',         title: 'Acting Director of Communications & Marketing', email: 'aharvey@tourismelaval.com',          cc: ['Christine Métayer (CEO) — cmetayer@tourismelaval.com'],                                                     date: '2026-07-15', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: "Tourisme Cantons-de-l'Est",         type: 'Tourism Board',  location: 'Eastern Townships, QC',      contact: 'Béatrice Cadieux',     title: 'Influencer Relations & Communications',        email: 'bcadieux@atrce.com',                 cc: ['rvigneault@atrce.com','Shanny Hallé — shalle@atrce.com'],                                                    date: '2026-07-15', status: 'In Conversation',  followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Has dedicated influencer relations contact' },
+
+  // ── Hotels & Resorts ──
+  { org: 'Chalet Al Foss',                    type: 'Hotels & Resorts', location: 'Vermiglio, Trentino, Italy',      contact: 'Hotel Team',      title: '', email: 'info@hotelchaletalfoss.it',     cc: [], date: '2026-07-14', status: 'In Conversation',  followup1: '', followup2: '', followup3: '', calFlag: false, notes: '1M Instagram followers. Oct 10-17 visit.' },
+  { org: 'Alpin Panorama Hotel Hubertus',     type: 'Hotels & Resorts', location: 'Olang, South Tyrol, Italy',       contact: 'Hotel Team',      title: '', email: 'info@hotel-hubertus.com',      cc: [], date: '2026-07-14', status: 'Closed',           followup1: '', followup2: '', followup3: '', calFlag: false, notes: '680K followers. Famous sky pool.' },
+  { org: 'Quellenhof Luxury Resorts',         type: 'Hotels & Resorts', location: 'San Martino in Passiria, Italy',  contact: 'Hotel Team',      title: '', email: 'info@quellenhof.it',           cc: [], date: '2026-07-14', status: 'Closed',           followup1: '', followup2: '', followup3: '', calFlag: false, notes: '484K followers.' },
+  { org: 'Forestis Dolomites',                type: 'Hotels & Resorts', location: 'Brixen, South Tyrol, Italy',      contact: 'Hotel Team',      title: '', email: 'info@forestis.it',             cc: [], date: '2026-07-14', status: 'Closed',           followup1: '', followup2: '', followup3: '', calFlag: false, notes: '393K followers. Visited by Bieber, Brad Pitt.' },
+  { org: 'Bio-Hotel Stanglwirt',              type: 'Hotels & Resorts', location: 'Going am Wilden Kaiser, Austria', contact: 'Hotel Team',      title: '', email: 'daheim@stanglwirt.com',        cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '254K followers. Family-owned since 1722.' },
+  { org: 'ADLER Spa Resort DOLOMITI',         type: 'Hotels & Resorts', location: 'Ortisei, Val Gardena, Italy',     contact: 'Hotel Team',      title: '', email: 'info@adler-dolomiti.com',      cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '229K followers across ADLER group.' },
+  { org: 'Miramonti Boutique Hotel',          type: 'Hotels & Resorts', location: 'Avelengo, South Tyrol, Italy',    contact: 'Hotel Team',      title: '', email: 'info@hotel-miramonti.com',     cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '156K followers. Brine infinity pool.' },
+  { org: 'Puradies Nature Resort',            type: 'Hotels & Resorts', location: 'Leogang, Salzburg, Austria',      contact: 'Hotel Team',      title: '', email: 'info@puradies.com',            cc: [], date: '2026-07-14', status: 'In Conversation',  followup1: '', followup2: '', followup3: '', calFlag: false, notes: '84K followers.' },
+  { org: 'Preidlhof Luxury Resort',           type: 'Hotels & Resorts', location: 'Naturno, South Tyrol, Italy',     contact: 'Hotel Team',      title: '', email: 'info@preidlhof.it',            cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '66K followers. Adults-only.' },
+  { org: 'Vigilius Mountain Resort',          type: 'Hotels & Resorts', location: 'Lana, South Tyrol, Italy',        contact: 'Hotel Team',      title: '', email: 'info@vigilius.it',             cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Accessible only by cable car.' },
+  { org: 'Hotel La Perla',                    type: 'Hotels & Resorts', location: 'Corvara, Alta Badia, Italy',      contact: 'Hotel Team',      title: '', email: 'info@hotel-laperla.it',        cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Ciasa Salares',                     type: 'Hotels & Resorts', location: 'Alta Badia, South Tyrol, Italy',  contact: 'Hotel Team',      title: '', email: 'info@ciasasalares.it',         cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Post Hotel',                        type: 'Hotels & Resorts', location: 'South Tyrol, Italy',              contact: 'Hotel Team',      title: '', email: 'info@posthotel.it',            cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Hotel Masl',                        type: 'Hotels & Resorts', location: 'South Tyrol, Italy',              contact: 'Hotel Team',      title: '', email: 'info@hotelmasl.com',           cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Hotel Terentnerhof',                type: 'Hotels & Resorts', location: 'Terenten, South Tyrol, Italy',    contact: 'Hotel Team',      title: '', email: 'info@terentnerhof.com',        cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Hotel Plunhof',                     type: 'Hotels & Resorts', location: 'Ridnaun, South Tyrol, Italy',     contact: 'Hotel Team',      title: '', email: 'info@plunhof.it',              cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Hotel Pfösl',                       type: 'Hotels & Resorts', location: 'Nova Ponente, South Tyrol, Italy',contact: 'Hotel Team',      title: '', email: 'info@pfoesl.com',              cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'San Luis Retreat Hotel',            type: 'Hotels & Resorts', location: 'Bressanone, South Tyrol, Italy',  contact: 'Hotel Team',      title: '', email: 'info@sanluisretreat.com',      cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: '' },
+  { org: 'Hotel Solvie',                      type: 'Hotels & Resorts', location: 'South Tyrol, Italy',              contact: 'Hotel Team',      title: '', email: 'info@hotelsolvie.com',          cc: [], date: '2026-07-14', status: 'Follow-up Needed', followup1: '2026-09-03', followup2: '', followup3: '', calFlag: false, notes: 'Verify email address' },
+  { org: 'Horeca Social',                     type: 'Hotels & Resorts', location: 'Italy (multi-property agency)',    contact: 'Influencer Team', title: 'Influencer Partnerships', email: 'influencer@horecacreator.com', cc: [], date: '2026-07-14', status: 'Sent',             followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Influencer agency. Covers multiple Dolomites properties.' },
+
+  // ── Cruises & Expeditions (under Tourism Boards tab) ──
+  { org: 'Silversea (Antarctica Expedition)', type: 'Tourism Board', location: 'Antarctica',                           contact: 'Gabby Nieto',  title: '',                   email: 'gnieto@silversea.com',                   cc: [],                                                                                                 date: '2026-07-14', status: 'Sent',       followup1: '', followup2: '', followup3: '', calFlag: false, notes: '6-month Celebrity exclusivity ends Oct 2026' },
+  { org: 'City Cruises Canada',               type: 'Tourism Board', location: 'Toronto / Niagara / Thousand Islands', contact: 'Greg Bechkos', title: 'Marketing, Ontario', email: 'greg.bechkos@cityexperiences.com',        cc: ['Madalena Phillips (VP Marketing) — madalena.phillips@cityexperiences.com'],                       date: '2026-07-16', status: 'Draft Saved', followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Part of City Experiences (Hornblower). Greg is Ontario-based.' },
+
+  // ── Creative Brands ──
+  { org: 'Insta360 (Luna Ultra)',             type: 'Creative Brands', location: 'Shenzhen, China',        contact: 'Yue Chen',    title: 'Creator Partnerships', email: 'yue.chen@insta360.com', cc: [], date: '2026-07-14', status: 'Sent',        followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Luna Ultra creator partnership' },
+];
+
+const STORAGE_KEY = 'basil_tracker_v5';
+
+let data = [];
+let activeTab = 'all';
+let saveTimer = null;
+
+function load() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Merge saved data onto SEED: keep saved fields, add any new SEED entries
+      const savedByOrg = {};
+      parsed.forEach(r => { savedByOrg[r.org] = r; });
+      data = SEED.map(s => savedByOrg[s.org] ? { ...s, ...savedByOrg[s.org] } : { ...s });
+      // Add any saved entries not in SEED (custom rows)
+      parsed.forEach(r => { if (!SEED.find(s => s.org === r.org)) data.push(r); });
+    } catch(e) { data = SEED.map(s => ({ ...s })); }
+  } else {
+    data = SEED.map(s => ({ ...s }));
+  }
+  buildTabs();
+  render();
+}
+
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    buildTabs();
+    updateStats();
+  }, 600);
+}
+
+function buildTabs() {
+  const container = document.getElementById('tabs');
+  container.innerHTML = '';
+  TABS.forEach(t => {
+    const count = t.id === 'all' ? data.length : data.filter(r => r.type === t.id).length;
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (activeTab === t.id ? ' active' : '');
+    btn.innerHTML = `${t.label} <span class="tab-count">${count}</span>`;
+    btn.onclick = () => { activeTab = t.id; buildTabs(); filterRows(); };
+    container.appendChild(btn);
+  });
+}
+
+function render() {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  data.forEach((row, i) => {
+    const statusClass = STATUS_CLASS[row.status] || 'status-draft';
+    const ccCount = (row.cc && row.cc.length) ? row.cc.length : 0;
+    const ccLabel = ccCount > 0 ? `CC ${ccCount}` : '+ Add CC';
+    const ccContent = (row.cc || []).join('\n');
+    const ccHTML = `<span class="cc-toggle" onclick="toggleCC(${i})">${ccLabel} <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+       <div class="cc-list" id="cc-${i}" contenteditable="true" spellcheck="false" onblur="updateCC(${i},this.innerText)">${ccContent}</div>
+       <div class="cc-hint">One entry per line, e.g. Name — email@domain.com</div>`;
+    const titleHTML = row.title ? `<div class="contact-title">${row.title}</div>` : '';
+    const locationHTML = row.location ? `<div class="org-location">${row.location}</div>` : '';
+    const tr = document.createElement('tr');
+    tr.dataset.org    = row.org.toLowerCase();
+    tr.dataset.type   = row.type;
+    tr.dataset.status = row.status;
+    tr.dataset.index  = i;
+    tr.innerHTML = `
+      <td>
+        <div class="org-name">${row.org}</div>
+        ${locationHTML}
+      </td>
+      <td>
+        <div class="contact-name">${row.contact}</div>
+        ${titleHTML}
+        <div class="contact-email" contenteditable="true" spellcheck="false" onblur="updateEmail(${i},this.innerText)" title="Click to edit email">${row.email}</div>
+        ${ccHTML}
+      </td>
+      <td style="white-space:nowrap">${row.date}</td>
+      <td>
+        <span class="status-pill ${statusClass}" onclick="cycleStatus(${i})" title="Click to change status">${row.status}</span>
+      </td>
+      <td>
+        <div class="followup-stack">
+          <div class="followup-row"><span class="followup-label">F/U 1</span><input type="date" value="${row.followup1||''}" onchange="updateFollowup(${i},1,this.value)"></div>
+          <div class="followup-row"><span class="followup-label">F/U 2</span><input type="date" value="${row.followup2||''}" onchange="updateFollowup(${i},2,this.value)"></div>
+          <div class="followup-row"><span class="followup-label">F/U 3</span><input type="date" value="${row.followup3||''}" onchange="updateFollowup(${i},3,this.value)"></div>
+        </div>
+      </td>
+      <td class="note-cell">
+        <div class="note-text" contenteditable="true" data-idx="${i}" onblur="updateNote(${i},this.innerText)">${row.notes}</div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateStats();
+  filterRows();
+}
+
+function toggleCC(i) {
+  document.getElementById(`cc-${i}`).classList.toggle('open');
+}
+
+function cycleStatus(i) {
+  const idx = STATUS_CYCLE.indexOf(data[i].status);
+  data[i].status = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+  save();
+  render();
+}
+
+function updateFollowup(i, n, val) {
+  data[i][`followup${n}`] = val;
+  save();
+}
+
+function updateEmail(i, val) {
+  data[i].email = val.trim();
+  save();
+}
+
+function updateCC(i, val) {
+  data[i].cc = val.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+  save();
+  // refresh just the CC toggle label without full re-render
+  const toggle = document.querySelector(`#cc-${i}`).previousElementSibling;
+  const count = data[i].cc.length;
+  toggle.childNodes[0].textContent = count > 0 ? `CC ${count} ` : '+ Add CC ';
+}
+
+function updateNote(i, val) {
+  data[i].notes = val.trim();
+  save();
+}
+
+function updateStats() {
+  const scope = activeTab === 'all' ? data : data.filter(r => r.type === activeTab);
+  const counts = {};
+  STATUS_CYCLE.forEach(s => counts[s] = 0);
+  scope.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+  document.getElementById('stats').innerHTML = `
+    <div class="stat stat-accent">
+      <div class="stat-value">${scope.length}</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">${counts['Draft Saved']}</div>
+      <div class="stat-label">Draft Saved</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">${counts['Sent'] + counts['Awaiting Reply']}</div>
+      <div class="stat-label">Sent / Waiting</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">${counts['In Conversation']}</div>
+      <div class="stat-label">In Conversation</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">${counts['Follow-up Needed']}</div>
+      <div class="stat-label">Follow-up Needed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">${counts['Closed']}</div>
+      <div class="stat-label">Closed</div>
+    </div>
+  `;
+}
+
+function onSearchInput() {
+  const val = document.getElementById('search').value;
+  document.getElementById('search-clear').classList.toggle('visible', val.length > 0);
+  filterRows();
+}
+
+function clearSearch() {
+  document.getElementById('search').value = '';
+  document.getElementById('search-clear').classList.remove('visible');
+  filterRows();
+}
+
+function filterRows() {
+  const q      = document.getElementById('search').value.toLowerCase();
+  const status = document.getElementById('filter-status').value;
+  let visible  = 0;
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    const matchTab    = activeTab === 'all' || tr.dataset.type === activeTab;
+    const matchQ      = !q      || tr.dataset.org.includes(q) || tr.innerText.toLowerCase().includes(q);
+    const matchStatus = !status || tr.dataset.status === status;
+    const show = matchTab && matchQ && matchStatus;
+    tr.classList.toggle('filtered-out', !show);
+    if (show) visible++;
+  });
+  const total = activeTab === 'all' ? data.length : data.filter(r => r.type === activeTab).length;
+  document.getElementById('row-count').textContent =
+    visible === total ? `Showing all ${total} entries` : `Showing ${visible} of ${total} entries`;
+  updateStats();
+}
+
+let sortCol = -1, sortAsc = true;
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('th').forEach((th, i) => th.classList.toggle('sorted', i === col));
+  const keys = ['org', 'contact', 'date', 'status'];
+  data.sort((a, b) => {
+    const va = (a[keys[col]] || '').toLowerCase();
+    const vb = (b[keys[col]] || '').toLowerCase();
+    return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  render();
+}
+
+function exportCSV() {
+  const scope = activeTab === 'all' ? data : data.filter(r => r.type === activeTab);
+  const headers = ['Organization','Location','Type','Primary Contact','Title','Email','CC','Date Pitched','Status','Follow-up 1','Follow-up 2','Follow-up 3','Notes'];
+  const rows = scope.map(r => [
+    r.org, r.location||'', r.type, r.contact, r.title, r.email,
+    (r.cc||[]).join(' | '), r.date, r.status,
+    r.followup1||'', r.followup2||'', r.followup3||'', r.notes
+  ].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `partnership_tracker${activeTab !== 'all' ? '_' + activeTab.replace(/[^a-z]/gi,'_') : ''}.csv`;
+  a.click();
+}
+
+load();
+</script>
