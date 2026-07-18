@@ -636,40 +636,49 @@ const SEED = [
   // ── Cruises & Expeditions (under Tourism Boards tab) ──
   { org: 'Silversea (Antarctica Expedition)', type: 'Tourism Board', location: 'Antarctica',                           contact: 'Gabby Nieto',  title: '',                   email: 'gnieto@silversea.com',                   cc: [],                                                                                                 date: '2026-07-14', status: 'Sent',       followup1: '', followup2: '', followup3: '', calFlag: false, notes: '6-month Celebrity exclusivity ends Oct 2026' },
   { org: 'City Cruises Canada',               type: 'Tourism Board', location: 'Toronto / Niagara / Thousand Islands', contact: 'Greg Bechkos', title: 'Marketing, Ontario', email: 'greg.bechkos@cityexperiences.com',        cc: ['Madalena Phillips (VP Marketing) — madalena.phillips@cityexperiences.com'],                       date: '2026-07-16', status: 'Draft Saved', followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Part of City Experiences (Hornblower). Greg is Ontario-based.' },
+  { org: 'Aurora Expeditions (Antarctica)',   type: 'Tourism Board', location: 'Antarctica',                           contact: 'Samantha Lynn', title: '',                  email: 'SLynn@aurora-expeditions.com',            cc: [],                                                                                                 date: '2026-07-17', status: 'Draft Saved', followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Collaboration pitch for Antarctica expedition with Matt (@hfxdrifter). 2026/2027 or 2027/2028 season. Already working with Aurora on Svalbard.' },
 
   // ── Creative Brands ──
   { org: 'Insta360 (Luna Ultra)',             type: 'Creative Brands', location: 'Shenzhen, China',        contact: 'Yue Chen',    title: 'Creator Partnerships', email: 'yue.chen@insta360.com', cc: [], date: '2026-07-14', status: 'Sent',        followup1: '', followup2: '', followup3: '', calFlag: false, notes: 'Luna Ultra creator partnership' },
 ];
 
-const STORAGE_KEY = 'basil_tracker_v5';
+const API_KEY = '$2a$10$2.p5yED8GHO4KBudpE6A0uuss10S1NjV2joaNr32HMuAhDXwgMzli';
+const BIN_ID  = '6a5a2f64da38895dfe6af903';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let data = [];
 let activeTab = 'all';
 let saveTimer = null;
 
-function load() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      // Merge saved data onto SEED: keep saved fields, add any new SEED entries
-      const savedByOrg = {};
-      parsed.forEach(r => { savedByOrg[r.org] = r; });
-      data = SEED.map(s => savedByOrg[s.org] ? { ...s, ...savedByOrg[s.org] } : { ...s });
-      // Add any saved entries not in SEED (custom rows)
-      parsed.forEach(r => { if (!SEED.find(s => s.org === r.org)) data.push(r); });
-    } catch(e) { data = SEED.map(s => ({ ...s })); }
-  } else {
+async function load() {
+  document.getElementById('tbody').innerHTML =
+    '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-sub)">Loading…</td></tr>';
+  try {
+    const r = await fetch(BIN_URL + '/latest', {
+      headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
+    });
+    if (!r.ok) throw new Error('fetch failed');
+    data = await r.json();
+    buildTabs();
+    render();
+  } catch(e) {
+    // Fallback to SEED if JSONBin unreachable
     data = SEED.map(s => ({ ...s }));
+    buildTabs();
+    render();
   }
-  buildTabs();
-  render();
 }
 
 function save() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  saveTimer = setTimeout(async () => {
+    try {
+      await fetch(BIN_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+        body: JSON.stringify(data)
+      });
+    } catch(e) { console.error('Save failed:', e); }
     buildTabs();
     updateStats();
   }, 600);
