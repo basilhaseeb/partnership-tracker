@@ -514,6 +514,39 @@
   .note-text:hover { border-color: var(--border); background: var(--surface-2); }
   .note-text:focus { border-color: var(--accent); background: var(--surface-2); outline: none; }
 
+/* ── Active / Archive view switch ── */
+  .view-switch {
+    max-width: 1280px;
+    margin: 0 auto 16px;
+    display: flex;
+    gap: 6px;
+  }
+  .view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-sub);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .view-btn:hover { background: var(--surface-2); color: var(--text); }
+  .view-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .view-btn .view-count {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    color: var(--text-sub);
+  }
+  .view-btn.active .view-count { background: rgba(255,255,255,.22); color: #fff; }
+
 /* ── Footer ── */
   .table-footer {
     max-width: 1280px;
@@ -537,6 +570,8 @@
     </button>
   </div>
 </div>
+
+<div class="view-switch" id="view-switch"></div>
 
 <div class="stats" id="stats"></div>
 
@@ -684,11 +719,46 @@ function save() {
   }, 600);
 }
 
+let activeView = 'active';
+try { if (localStorage.getItem('tracker_view') === 'archive') activeView = 'archive'; } catch (e) {}
+
+function inView(status) {
+  return activeView === 'archive' ? status === 'Closed' : status !== 'Closed';
+}
+function viewRows() { return data.filter(r => inView(r.status)); }
+function scopeRows() {
+  const rows = viewRows();
+  return activeTab === 'all' ? rows : rows.filter(r => r.type === activeTab);
+}
+
+function buildViewSwitch() {
+  const archived = data.filter(r => r.status === 'Closed').length;
+  const views = [
+    { id: 'active',  label: 'Active',  count: data.length - archived },
+    { id: 'archive', label: 'Archive', count: archived },
+  ];
+  const el = document.getElementById('view-switch');
+  el.innerHTML = '';
+  views.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'view-btn' + (activeView === v.id ? ' active' : '');
+    btn.innerHTML = `${v.label} <span class="view-count">${v.count}</span>`;
+    btn.onclick = () => {
+      activeView = v.id;
+      try { localStorage.setItem('tracker_view', v.id); } catch (e) {}
+      buildViewSwitch(); buildTabs(); filterRows();
+    };
+    el.appendChild(btn);
+  });
+}
+
 function buildTabs() {
+  buildViewSwitch();
   const container = document.getElementById('tabs');
   container.innerHTML = '';
+  const rows = viewRows();
   TABS.forEach(t => {
-    const count = t.id === 'all' ? data.length : data.filter(r => r.type === t.id).length;
+    const count = t.id === 'all' ? rows.length : rows.filter(r => r.type === t.id).length;
     const btn = document.createElement('button');
     btn.className = 'tab' + (activeTab === t.id ? ' active' : '');
     btn.innerHTML = `${t.label} <span class="tab-count">${count}</span>`;
@@ -756,6 +826,7 @@ function cycleStatus(i) {
   data[i].status = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
   save();
   render();
+  buildTabs();
 }
 
 function updateFollowup(i, n, val) {
@@ -783,7 +854,7 @@ function updateNote(i, val) {
 }
 
 function updateStats() {
-  const scope = activeTab === 'all' ? data : data.filter(r => r.type === activeTab);
+  const scope = scopeRows();
   const counts = {};
   STATUS_CYCLE.forEach(s => counts[s] = 0);
   scope.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
@@ -832,16 +903,18 @@ function filterRows() {
   const status = document.getElementById('filter-status').value;
   let visible  = 0;
   document.querySelectorAll('#tbody tr').forEach(tr => {
+    const matchView   = inView(tr.dataset.status);
     const matchTab    = activeTab === 'all' || tr.dataset.type === activeTab;
     const matchQ      = !q      || tr.dataset.org.includes(q) || tr.innerText.toLowerCase().includes(q);
     const matchStatus = !status || tr.dataset.status === status;
-    const show = matchTab && matchQ && matchStatus;
+    const show = matchView && matchTab && matchQ && matchStatus;
     tr.classList.toggle('filtered-out', !show);
     if (show) visible++;
   });
-  const total = activeTab === 'all' ? data.length : data.filter(r => r.type === activeTab).length;
+  const total = scopeRows().length;
+  const label = activeView === 'archive' ? 'archived' : 'active';
   document.getElementById('row-count').textContent =
-    visible === total ? `Showing all ${total} entries` : `Showing ${visible} of ${total} entries`;
+    visible === total ? `Showing all ${total} ${label} entries` : `Showing ${visible} of ${total} ${label} entries`;
   updateStats();
 }
 
@@ -859,8 +932,8 @@ function sortTable(col) {
 }
 
 function exportCSV() {
-  const scope = activeTab === 'all' ? data : data.filter(r => r.type === activeTab);
-  const headers = ['Organization','Location','Type','Primary Contact','Title','Email','CC','Date Pitched','Status','Follow-up 1','Follow-up 2','Follow-up 3','Notes'];
+  const scope = scopeRows();
+  const headers =['Organization','Location','Type','Primary Contact','Title','Email','CC','Date Pitched','Status','Follow-up 1','Follow-up 2','Follow-up 3','Notes'];
   const rows = scope.map(r => [
     r.org, r.location||'', r.type, r.contact, r.title, r.email,
     (r.cc||[]).join(' | '), r.date, r.status,
@@ -869,7 +942,7 @@ function exportCSV() {
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = `partnership_tracker${activeTab !== 'all' ? '_' + activeTab.replace(/[^a-z]/gi,'_') : ''}.csv`;
+  a.download = `partnership_tracker_${activeView}${activeTab !== 'all' ? '_' + activeTab.replace(/[^a-z]/gi,'_') : ''}.csv`;
   a.click();
 }
 
