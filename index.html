@@ -494,6 +494,11 @@
   input[type="date"]:hover { border-color: var(--border); background: var(--surface-2); }
   input[type="date"]:focus { border-color: var(--accent); background: var(--surface-2); }
 
+  /* Follow-up dates: yellow = 1st, green = 2nd, red = 3rd (only once a date is set) */
+  input[type="date"].fu-1.filled { background: rgba(250, 204, 21, .35); border-color: rgba(202, 138, 4, .6); font-weight: 600; }
+  input[type="date"].fu-2.filled { background: rgba(34, 197, 94, .30);  border-color: rgba(22, 163, 74, .6); font-weight: 600; }
+  input[type="date"].fu-3.filled { background: rgba(239, 68, 68, .30);  border-color: rgba(220, 38, 38, .6); font-weight: 600; }
+
   /* ── Notes ── */
   .note-cell { min-width: 180px; max-width: 240px; }
 
@@ -802,9 +807,9 @@ function render() {
       </td>
       <td>
         <div class="followup-stack">
-          <div class="followup-row"><span class="followup-label">F/U 1</span><input type="date" value="${row.followup1||''}" onchange="updateFollowup(${i},1,this.value)"></div>
-          <div class="followup-row"><span class="followup-label">F/U 2</span><input type="date" value="${row.followup2||''}" onchange="updateFollowup(${i},2,this.value)"></div>
-          <div class="followup-row"><span class="followup-label">F/U 3</span><input type="date" value="${row.followup3||''}" onchange="updateFollowup(${i},3,this.value)"></div>
+          <div class="followup-row"><span class="followup-label">F/U 1</span><input type="date" class="fu-1${row.followup1?' filled':''}" value="${row.followup1||''}" onchange="updateFollowup(${i},1,this.value,this)"></div>
+          <div class="followup-row"><span class="followup-label">F/U 2</span><input type="date" class="fu-2${row.followup2?' filled':''}" value="${row.followup2||''}" onchange="updateFollowup(${i},2,this.value,this)"></div>
+          <div class="followup-row"><span class="followup-label">F/U 3</span><input type="date" class="fu-3${row.followup3?' filled':''}" value="${row.followup3||''}" onchange="updateFollowup(${i},3,this.value,this)"></div>
         </div>
       </td>
       <td class="note-cell">
@@ -829,8 +834,9 @@ function cycleStatus(i) {
   buildTabs();
 }
 
-function updateFollowup(i, n, val) {
+function updateFollowup(i, n, val, el) {
   data[i][`followup${n}`] = val;
+  if (el) el.classList.toggle('filled', !!val);
   save();
 }
 
