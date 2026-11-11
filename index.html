@@ -683,42 +683,70 @@ const SEED = [
 ];
 
 const API_KEY = '$2a$10$2.p5yED8GHO4KBudpE6A0uuss10S1NjV2joaNr32HMuAhDXwgMzli';
-const BIN_ID  = '6a5a2f64da38895dfe6af903';
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+// The free JSONBin plan caps a bin at 100KB, so Closed rows live in a separate archive bin.
+// Both are loaded and shown together; on save each row goes to its bin based on its status.
+const BIN_URL     = 'https://api.jsonbin.io/v3/b/6a5a2f64da38895dfe6af903';
+const ARCHIVE_URL = 'https://api.jsonbin.io/v3/b/6af4d277ffd5d16053ba5307';
 
 let data = [];
 let activeTab = 'all';
 let saveTimer = null;
+let canSave = false;              // stays false if loading failed, so a partial view never overwrites stored data
+const lastSaved = { main: '', archive: '' };
+
+async function fetchBin(url) {
+  const r = await fetch(url + '/latest', { headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' } });
+  if (!r.ok) throw new Error('fetch failed: ' + r.status);
+  return r.json();
+}
+
+function splitBins() {
+  return {
+    main:    JSON.stringify(data.filter(r => r.status !== 'Closed')),
+    archive: JSON.stringify(data.filter(r => r.status === 'Closed')),
+  };
+}
 
 async function load() {
   document.getElementById('tbody').innerHTML =
     '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-sub)">Loading…</td></tr>';
   try {
-    const r = await fetch(BIN_URL + '/latest', {
-      headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
-    });
-    if (!r.ok) throw new Error('fetch failed');
-    data = await r.json();
-    buildTabs();
-    render();
+    const [main, archive] = await Promise.all([fetchBin(BIN_URL), fetchBin(ARCHIVE_URL)]);
+    data = main.concat(archive);
+    Object.assign(lastSaved, splitBins());
+    canSave = true;
   } catch(e) {
-    // Fallback to SEED if JSONBin unreachable
+    // Show SEED read-only if JSONBin is unreachable; never save it over the real data.
+    console.error(e);
     data = SEED.map(s => ({ ...s }));
-    buildTabs();
-    render();
+    alert('Could not load the tracker. Showing a read-only copy; changes will not be saved. Refresh to try again.');
   }
+  buildTabs();
+  render();
 }
 
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    try {
-      await fetch(BIN_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-        body: JSON.stringify(data)
-      });
-    } catch(e) { console.error('Save failed:', e); }
+    if (canSave) {
+      const bins = splitBins();
+      try {
+        // Write only the bins that changed. Archive first, so a row moving between bins is never missing from both.
+        for (const [key, url] of [['archive', ARCHIVE_URL], ['main', BIN_URL]]) {
+          if (bins[key] === lastSaved[key]) continue;
+          const r = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+            body: bins[key]
+          });
+          if (!r.ok) throw new Error(`${key} bin: ${r.status}`);
+          lastSaved[key] = bins[key];
+        }
+      } catch(e) {
+        console.error('Save failed:', e);
+        alert('Save failed (' + e.message + '). Your last change was not stored. Refresh and try again.');
+      }
+    }
     buildTabs();
     updateStats();
   }, 600);
