@@ -449,6 +449,31 @@
   }
   .status-pill:hover { opacity: .82; }
   .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .status-pill { position: relative; padding-right: 8px; }
+  .status-select {
+    appearance: none; -webkit-appearance: none;
+    background: transparent; border: 0; outline: none;
+    color: inherit; font: inherit; cursor: pointer;
+    padding: 0 14px 0 0; margin: 0;
+  }
+  .status-select:focus-visible { text-decoration: underline; }
+  .status-select option { color: var(--text); background: var(--surface); }
+  .status-caret { position: absolute; right: 9px; pointer-events: none; font-size: 9px; }
+
+  /* ── Undo toast ── */
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--surface);
+    padding: 10px 14px; border-radius: 10px; font-size: 13px;
+    display: flex; align-items: center; gap: 14px;
+    opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; z-index: 1000;
+    max-width: calc(100vw - 32px);
+  }
+  .toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  .toast button {
+    background: transparent; border: 1px solid currentColor; color: inherit;
+    border-radius: 6px; padding: 3px 10px; font: inherit; font-weight: 600; cursor: pointer;
+  }
 
   .status-draft     { background: var(--s-draft-bg);   color: var(--s-draft-text);   }
   .status-draft::before     { background: var(--s-draft-dot);   }
@@ -566,7 +591,7 @@
   <div class="header-left">
     <span class="eyebrow">Basil Haseeb · Creator Outreach</span>
     <h1>Partnership Tracker</h1>
-    <p class="header-sub">Click a status pill to update · Click notes to edit · Changes save automatically</p>
+    <p class="header-sub">Pick a status from its dropdown · Click notes to edit · Changes save automatically</p>
   </div>
   <div class="header-actions">
     <button class="btn" onclick="exportCSV()">
@@ -832,7 +857,12 @@ function render() {
       </td>
       <td style="white-space:nowrap">${row.date}</td>
       <td>
-        <span class="status-pill ${statusClass}" onclick="cycleStatus(${i})" title="Click to change status">${row.status}</span>
+        <span class="status-pill ${statusClass}" title="Change status">
+          <select class="status-select" onchange="setStatus(${i}, this)" aria-label="Status for ${row.org}">
+            ${STATUS_CYCLE.concat(STATUS_CYCLE.includes(row.status) ? [] : [row.status])
+              .map(s => `<option${s === row.status ? ' selected' : ''}>${s}</option>`).join('')}
+          </select><span class="status-caret">▾</span>
+        </span>
       </td>
       <td>
         <div class="followup-stack">
@@ -855,12 +885,48 @@ function toggleCC(i) {
   document.getElementById(`cc-${i}`).classList.toggle('open');
 }
 
-function cycleStatus(i) {
-  const idx = STATUS_CYCLE.indexOf(data[i].status);
-  data[i].status = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+function setStatus(i, el) {
+  const prev = data[i].status;
+  const next = el.value;
+  if (next === prev) return;
+  if (next === 'Closed' && !confirm(`Close ${data[i].org}? It will move to the Archive.`)) {
+    el.value = prev;
+    return;
+  }
+  data[i].status = next;
   save();
   render();
   buildTabs();
+  const moved = (prev === 'Closed') !== (next === 'Closed');
+  const where = moved ? (next === 'Closed' ? ' and moved to Archive' : ' and moved back to Active') : '';
+  showUndo(`${data[i].org}: ${next}${where}`, () => {
+    data[i].status = prev;
+    save();
+    render();
+    buildTabs();
+  });
+}
+
+let toastTimer;
+function showUndo(msg, undo) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.className = 'toast';
+    t.setAttribute('role', 'status');
+    document.body.appendChild(t);
+  }
+  t.innerHTML = '';
+  const span = document.createElement('span');
+  span.textContent = msg;
+  const btn = document.createElement('button');
+  btn.textContent = 'Undo';
+  btn.onclick = () => { clearTimeout(toastTimer); t.classList.remove('show'); undo(); };
+  t.append(span, btn);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 8000);
 }
 
 function updateFollowup(i, n, val, el) {
