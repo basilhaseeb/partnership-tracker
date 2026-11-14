@@ -191,7 +191,14 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
   }
+  .stat:hover { border-color: var(--accent); }
+  .stat.active { border-color: var(--accent); background: var(--accent-light); }
+  .stat.active .stat-label { color: var(--accent); }
 
   .stat-value {
     font-size: 26px;
@@ -621,6 +628,7 @@
   <select id="filter-status" onchange="filterRows()">
     <option value="">All statuses</option>
     <option value="Draft Saved">Draft Saved</option>
+    <option value="Sent|Awaiting Reply">Sent / Waiting</option>
     <option value="Sent">Sent</option>
     <option value="Awaiting Reply">Awaiting Reply</option>
     <option value="In Conversation">In Conversation</option>
@@ -807,6 +815,7 @@ function buildViewSwitch() {
     btn.innerHTML = `${v.label} <span class="view-count">${v.count}</span>`;
     btn.onclick = () => {
       activeView = v.id;
+      document.getElementById('filter-status').value = '';
       try { localStorage.setItem('tracker_view', v.id); } catch (e) {}
       buildViewSwitch(); buildTabs(); filterRows();
     };
@@ -973,37 +982,45 @@ function updateNote(i, val) {
   save();
 }
 
+// Tiles count every row in the current tab (Active and Archive together), so Closed is never stuck at 0.
+// Clicking a tile filters the table to that status; clicking it again (or Total) clears the filter.
+const STAT_TILES = [
+  { label: 'Total',            filter: '' },
+  { label: 'Draft Saved',      filter: 'Draft Saved' },
+  { label: 'Sent / Waiting',   filter: 'Sent|Awaiting Reply' },
+  { label: 'In Conversation',  filter: 'In Conversation' },
+  { label: 'Follow-up Needed', filter: 'Follow-up Needed' },
+  { label: 'Closed',           filter: 'Closed' },
+];
+
 function updateStats() {
-  const scope = scopeRows();
-  const counts = {};
-  STATUS_CYCLE.forEach(s => counts[s] = 0);
-  scope.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
-  document.getElementById('stats').innerHTML = `
-    <div class="stat stat-accent">
-      <div class="stat-value">${scope.length}</div>
-      <div class="stat-label">Total</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${counts['Draft Saved']}</div>
-      <div class="stat-label">Draft Saved</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${counts['Sent'] + counts['Awaiting Reply']}</div>
-      <div class="stat-label">Sent / Waiting</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${counts['In Conversation']}</div>
-      <div class="stat-label">In Conversation</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${counts['Follow-up Needed']}</div>
-      <div class="stat-label">Follow-up Needed</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value">${counts['Closed']}</div>
-      <div class="stat-label">Closed</div>
-    </div>
-  `;
+  const scope = activeTab === 'all' ? data : data.filter(r => r.type === activeTab);
+  const current = document.getElementById('filter-status').value;
+  const el = document.getElementById('stats');
+  el.innerHTML = '';
+  STAT_TILES.forEach(t => {
+    const want = t.filter.split('|');
+    const n = t.filter ? scope.filter(r => want.includes(r.status)).length : scope.length;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'stat' + (t.filter ? '' : ' stat-accent') + (t.filter && current === t.filter ? ' active' : '');
+    btn.title = t.filter ? `Show only ${t.label}` : 'Show everything';
+    btn.innerHTML = `<div class="stat-value">${n}</div><div class="stat-label">${t.label}</div>`;
+    btn.onclick = () => statClick(t.filter);
+    el.appendChild(btn);
+  });
+}
+
+function statClick(filter) {
+  const sel = document.getElementById('filter-status');
+  sel.value = (filter && sel.value !== filter) ? filter : '';
+  // Closed rows live in Archive, everything else in Active
+  if (sel.value) {
+    activeView = sel.value === 'Closed' ? 'archive' : 'active';
+    try { localStorage.setItem('tracker_view', activeView); } catch (e) {}
+    buildTabs();
+  }
+  filterRows();
 }
 
 function onSearchInput() {
@@ -1023,10 +1040,11 @@ function filterRows() {
   const status = document.getElementById('filter-status').value;
   let visible  = 0;
   document.querySelectorAll('#tbody tr').forEach(tr => {
-    const matchView   = inView(tr.dataset.status);
+    // a status filter decides on its own which rows show, so picking Closed works from the Active view too
+    const matchView   = status ? true : inView(tr.dataset.status);
     const matchTab    = activeTab === 'all' || tr.dataset.type === activeTab;
     const matchQ      = !q      || tr.dataset.org.includes(q) || tr.innerText.toLowerCase().includes(q);
-    const matchStatus = !status || tr.dataset.status === status;
+    const matchStatus = !status || status.split('|').includes(tr.dataset.status);
     const show = matchView && matchTab && matchQ && matchStatus;
     tr.classList.toggle('filtered-out', !show);
     if (show) visible++;
