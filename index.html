@@ -521,6 +521,7 @@
 
   /* Next F/U = red (solid once the date arrives); sent follow-ups F/U 1-3 = yellow (only once a date is set) */
   input[type="date"].fu-next.filled { background: rgba(239, 68, 68, .22); border-color: rgba(220, 38, 38, .6); font-weight: 600; }
+  input[type="date"].fu-next.filled.soon { background: rgba(239, 68, 68, .45); border-color: #DC2626; }
   input[type="date"].fu-next.filled.due { background: #DC2626; border-color: #DC2626; color: #fff; }
   input[type="date"].fu-sent.filled { background: rgba(250, 204, 21, .35); border-color: rgba(202, 138, 4, .6); font-weight: 600; }
   .followup-row.next-row { margin-bottom: 7px; }
@@ -868,7 +869,7 @@ function render() {
       </td>
       <td>
         <div class="followup-stack">
-          <div class="followup-row next-row" title="Next follow-up to send"><span class="followup-label">Next</span><input type="date" class="fu-next${row.nextFU?' filled':''}${isDue(row.nextFU)?' due':''}" value="${row.nextFU||''}" onchange="updateFollowup(${i},'next',this.value,this)"></div>
+          <div class="followup-row next-row" title="Next follow-up to send"><span class="followup-label">Next</span><input type="date" class="fu-next${row.nextFU?' filled':''}${isDue(row.nextFU)?' due':isSoon(row.nextFU)?' soon':''}" value="${row.nextFU||''}" title="${row.nextFU ? (isDue(row.nextFU) ? 'Follow-up due' : isSoon(row.nextFU) ? 'Follow-up coming up this week' : 'Next follow-up') : 'Set the next follow-up date'}" onchange="updateFollowup(${i},'next',this.value,this)"></div>
           <div class="followup-row"><span class="followup-label">F/U 1</span><input type="date" class="fu-sent${row.followup1?' filled':''}" value="${row.followup1||''}" onchange="updateFollowup(${i},1,this.value,this)"></div>
           <div class="followup-row"><span class="followup-label">F/U 2</span><input type="date" class="fu-sent${row.followup2?' filled':''}" value="${row.followup2||''}" onchange="updateFollowup(${i},2,this.value,this)"></div>
           <div class="followup-row"><span class="followup-label">F/U 3</span><input type="date" class="fu-sent${row.followup3?' filled':''}" value="${row.followup3||''}" onchange="updateFollowup(${i},3,this.value,this)"></div>
@@ -937,12 +938,18 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function isDue(d) { return !!d && d <= todayISO(); }
+function isSoon(d) {  // within the next 7 days: Basil gets a week's heads-up
+  if (!d || isDue(d)) return false;
+  const wk = new Date(); wk.setDate(wk.getDate() + 7);
+  const lim = `${wk.getFullYear()}-${String(wk.getMonth() + 1).padStart(2, '0')}-${String(wk.getDate()).padStart(2, '0')}`;
+  return d <= lim;
+}
 
 function updateFollowup(i, n, val, el) {
   data[i][n === 'next' ? 'nextFU' : `followup${n}`] = val;
   if (el) {
     el.classList.toggle('filled', !!val);
-    if (n === 'next') el.classList.toggle('due', isDue(val));
+    if (n === 'next') { el.classList.toggle('due', isDue(val)); el.classList.toggle('soon', isSoon(val)); }
   }
   save();
 }
