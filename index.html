@@ -199,6 +199,9 @@
   .stat:hover { border-color: var(--accent); }
   .stat.active { border-color: var(--accent); background: var(--accent-light); }
   .stat.active .stat-label { color: var(--accent); }
+  .stat.stat-next { border-top: 3px solid #DC2626; }
+  .stat.stat-next .stat-label { color: #DC2626; }
+  .stat.stat-next.active { background: rgba(239, 68, 68, .12); border-color: #DC2626; }
 
   .stat-value {
     font-size: 26px;
@@ -634,6 +637,7 @@
     <option value="In Conversation">In Conversation</option>
     <option value="Follow-up Needed">Follow-up Needed</option>
     <option value="Closed">Closed</option>
+    <option value="__next">Has Next F/U</option>
   </select>
 </div>
 
@@ -984,6 +988,7 @@ function updateNote(i, val) {
 
 // Tiles count every row in the current tab (Active and Archive together), so Closed is never stuck at 0.
 // Clicking a tile filters the table to that status; clicking it again (or Total) clears the filter.
+const NEXT_FU = '__next';  // pseudo-status: rows with a Next F/U date set
 const STAT_TILES = [
   { label: 'Total',            filter: '' },
   { label: 'Draft Saved',      filter: 'Draft Saved' },
@@ -991,6 +996,7 @@ const STAT_TILES = [
   { label: 'In Conversation',  filter: 'In Conversation' },
   { label: 'Follow-up Needed', filter: 'Follow-up Needed' },
   { label: 'Closed',           filter: 'Closed' },
+  { label: 'Next F/U',         filter: NEXT_FU },
 ];
 
 function updateStats() {
@@ -1000,10 +1006,13 @@ function updateStats() {
   el.innerHTML = '';
   STAT_TILES.forEach(t => {
     const want = t.filter.split('|');
-    const n = t.filter ? scope.filter(r => want.includes(r.status)).length : scope.length;
+    const n = !t.filter ? scope.length
+            : t.filter === NEXT_FU ? scope.filter(r => r.nextFU).length
+            : scope.filter(r => want.includes(r.status)).length;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'stat' + (t.filter ? '' : ' stat-accent') + (t.filter && current === t.filter ? ' active' : '');
+    btn.className = 'stat' + (t.filter ? '' : ' stat-accent') + (t.filter === NEXT_FU ? ' stat-next' : '')
+                  + (t.filter && current === t.filter ? ' active' : '');
     btn.title = t.filter ? `Show only ${t.label}` : 'Show everything';
     btn.innerHTML = `<div class="stat-value">${n}</div><div class="stat-label">${t.label}</div>`;
     btn.onclick = () => statClick(t.filter);
@@ -1017,6 +1026,7 @@ function statClick(filter) {
   // Closed rows live in Archive, everything else in Active
   if (sel.value) {
     activeView = sel.value === 'Closed' ? 'archive' : 'active';
+    if (sel.value === NEXT_FU) sortByNextFU();
     try { localStorage.setItem('tracker_view', activeView); } catch (e) {}
     buildTabs();
   }
@@ -1044,7 +1054,8 @@ function filterRows() {
     const matchView   = status ? true : inView(tr.dataset.status);
     const matchTab    = activeTab === 'all' || tr.dataset.type === activeTab;
     const matchQ      = !q      || tr.dataset.org.includes(q) || tr.innerText.toLowerCase().includes(q);
-    const matchStatus = !status || status.split('|').includes(tr.dataset.status);
+    const matchStatus = !status
+      || (status === NEXT_FU ? !!data[tr.dataset.index].nextFU : status.split('|').includes(tr.dataset.status));
     const show = matchView && matchTab && matchQ && matchStatus;
     tr.classList.toggle('filtered-out', !show);
     if (show) visible++;
@@ -1054,6 +1065,12 @@ function filterRows() {
   document.getElementById('row-count').textContent =
     visible === total ? `Showing all ${total} ${label} entries` : `Showing ${visible} of ${total} ${label} entries`;
   updateStats();
+}
+
+// Next F/U view: soonest date first
+function sortByNextFU() {
+  data.sort((a, b) => (a.nextFU || '9999').localeCompare(b.nextFU || '9999'));
+  render();
 }
 
 let sortCol = -1, sortAsc = true;
